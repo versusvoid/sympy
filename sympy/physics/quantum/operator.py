@@ -11,7 +11,7 @@ TODO:
 
 from __future__ import print_function, division
 
-from sympy import Derivative, Expr, Integer, oo, Mul, expand, Add
+from sympy import Derivative, Expr, Integer, oo, Mul, expand, Add, S
 from sympy.printing.pretty.stringpict import prettyForm
 from sympy.physics.quantum.dagger import Dagger
 from sympy.physics.quantum.qexpr import QExpr, dispatch_method
@@ -100,7 +100,11 @@ class Operator(QExpr):
 
     @classmethod
     def default_args(self):
-        return ("O",)
+        return ()
+
+    @property
+    def free_symbols(self):
+        return set().union(*(a.free_symbols for a in self.args))
 
     #-------------------------------------------------------------------------
     # Printing
@@ -117,34 +121,25 @@ class Operator(QExpr):
         return prettyForm(self.__class__.__name__)
 
     def _print_contents(self, printer, *args):
-        if len(self.label) == 1:
-            return self._print_label(printer, *args)
-        else:
-            return '%s(%s)' % (
-                self._print_operator_name(printer, *args),
-                self._print_label(printer, *args)
-            )
+        return '%s(%s)' % (
+            self._print_operator_name(printer, *args),
+            self._print_label(printer, *args)
+        )
 
     def _print_contents_pretty(self, printer, *args):
-        if len(self.label) == 1:
-            return self._print_label_pretty(printer, *args)
-        else:
-            pform = self._print_operator_name_pretty(printer, *args)
-            label_pform = self._print_label_pretty(printer, *args)
-            label_pform = prettyForm(
-                *label_pform.parens(left='(', right=')')
-            )
-            pform = prettyForm(*pform.right((label_pform)))
-            return pform
+        pform = self._print_operator_name_pretty(printer, *args)
+        label_pform = self._print_label_pretty(printer, *args)
+        label_pform = prettyForm(
+            *label_pform.parens(left='(', right=')')
+        )
+        pform = prettyForm(*pform.right((label_pform)))
+        return pform
 
     def _print_contents_latex(self, printer, *args):
-        if len(self.label) == 1:
-            return self._print_label_latex(printer, *args)
-        else:
-            return r'%s\left(%s\right)' % (
-                self._print_operator_name_latex(printer, *args),
-                self._print_label_latex(printer, *args)
-            )
+        return r'%s\left(%s\right)' % (
+            self._print_operator_name_latex(printer, *args),
+            self._print_label_latex(printer, *args)
+        )
 
     #-------------------------------------------------------------------------
     # _eval_* methods

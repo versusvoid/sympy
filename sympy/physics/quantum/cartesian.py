@@ -8,7 +8,8 @@ TODO:
 
 from __future__ import print_function, division
 
-from sympy import DiracDelta, exp, I, Interval, pi, S, sqrt
+from sympy import DiracDelta, exp, I, Interval, pi, S, sqrt, Symbol
+from sympy.printing.pretty.stringpict import prettyForm
 from sympy.core.compatibility import range
 
 from sympy.physics.quantum.constants import hbar
@@ -25,6 +26,8 @@ __all__ = [
     'Y',
     'Z',
     'Px',
+    'Py',
+    'Pz',
     'XKet',
     'XBra',
     'PxKet',
@@ -39,27 +42,46 @@ __all__ = [
 #-------------------------------------------------------------------------
 
 
-class XOp(HermitianOperator):
+class PositionOperator(HermitianOperator):
     """1D cartesian position operator."""
 
     @classmethod
     def default_args(self):
-        return ("X",)
+        return ("x",)
+
+    def _print_operator_name(self, printer, *args):
+        return printer._print(str(self.args[0]).upper(), *args)
+
+    _print_operator_name_latex = _print_operator_name
+
+    def _print_operator_name_pretty(self, printer, *args):
+        return prettyForm(str(self.args[0]).upper())
 
     @classmethod
     def _eval_hilbert_space(self, args):
         return L2(Interval(S.NegativeInfinity, S.Infinity))
 
-    def _eval_commutator_PxOp(self, other):
-        return I*hbar
+    def _eval_commutator_MomentumOperator(self, other):
+        if other.args[0] == other.args[0]:
+            return I*hbar
+        else:
+            return S.Zero
+
+    def _eval_commutator_PositionOperator(self, other):
+        return S.Zero
 
     def _apply_operator_XKet(self, ket):
-        return ket.position*ket
+        if self.args[0] == Symbol('x'):
+            return ket.position*ket
+        else:
+            raise Exception('does not apply')
 
     def _apply_operator_PositionKet3D(self, ket):
-        return ket.position_x*ket
+        return getattr(ket, f'position_{self.args[0].lower()}')*ket
 
     def _represent_PxKet(self, basis, **options):
+        if self.args[0] != Symbol('x'):
+            raise Exception('does not apply')
         index = options.pop("index", 1)
 
         states = basis._enumerate_state(2, start_index=index)
@@ -71,55 +93,55 @@ class XOp(HermitianOperator):
         return I*hbar*(d*delta)
 
 
-class YOp(HermitianOperator):
-    """ Y cartesian coordinate operator (for 2D or 3D systems) """
+XOp = PositionOperator
 
-    @classmethod
-    def default_args(self):
-        return ("Y",)
+def YOp(*args):
+    if not args:
+        args = ('y',)
+    return PositionOperator(*args)
 
-    @classmethod
-    def _eval_hilbert_space(self, args):
-        return L2(Interval(S.NegativeInfinity, S.Infinity))
-
-    def _apply_operator_PositionKet3D(self, ket):
-        return ket.position_y*ket
-
-
-class ZOp(HermitianOperator):
-    """ Z cartesian coordinate operator (for 3D systems) """
-
-    @classmethod
-    def default_args(self):
-        return ("Z",)
-
-    @classmethod
-    def _eval_hilbert_space(self, args):
-        return L2(Interval(S.NegativeInfinity, S.Infinity))
-
-    def _apply_operator_PositionKet3D(self, ket):
-        return ket.position_z*ket
+def ZOp(*args):
+    if not args:
+        args = ('z',)
+    return PositionOperator(*args)
 
 #-------------------------------------------------------------------------
 # Momentum operators
 #-------------------------------------------------------------------------
 
 
-class PxOp(HermitianOperator):
+class MomentumOperator(HermitianOperator):
     """1D cartesian momentum operator."""
+
+    def _print_operator_name(self, printer, *args):
+        return printer._print(f'P{self.args[0]}', *args)
+
+    def _print_operator_name_latex(self, printer, *args):
+        return printer._print('P_{%s}' % self.args[0], *args)
+
+    def _print_operator_name_pretty(self, printer, *args):
+        return prettyForm(f'P_{self.args[0]}')
 
     @classmethod
     def default_args(self):
-        return ("Px",)
+        return ("x",)
 
     @classmethod
     def _eval_hilbert_space(self, args):
         return L2(Interval(S.NegativeInfinity, S.Infinity))
 
+    def _eval_commutator_MomentumOperator(self, other):
+        return S.Zero
+
     def _apply_operator_PxKet(self, ket):
-        return ket.momentum*ket
+        if self.args[0] == Symbol('x'):
+            return ket.momentum*ket
+        else:
+            raise Exception('does not apply')
 
     def _represent_XKet(self, basis, **options):
+        if self.args[0] != Symbol('x'):
+            raise Exception('does not apply')
         index = options.pop("index", 1)
 
         states = basis._enumerate_state(2, start_index=index)
@@ -130,10 +152,15 @@ class PxOp(HermitianOperator):
 
         return -I*hbar*(d*delta)
 
-X = XOp('X')
-Y = YOp('Y')
-Z = ZOp('Z')
-Px = PxOp('Px')
+
+PxOp = MomentumOperator
+
+X = XOp('x')
+Y = YOp('y')
+Z = ZOp('z')
+Px = PxOp()
+Py = MomentumOperator('y')
+Pz = MomentumOperator('z')
 
 #-------------------------------------------------------------------------
 # Position eigenstates

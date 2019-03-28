@@ -141,18 +141,14 @@ class Commutator(Expr):
             # [A + B, C]  ->  [A, C] + [B, C]
             sargs = []
             for term in A.args:
-                comm = Commutator(term, B)
-                if isinstance(comm, Commutator):
-                    comm = comm._eval_expand_commutator()
+                comm = Commutator(term, B).expand(commutator=True)
                 sargs.append(comm)
             return Add(*sargs)
         elif isinstance(B, Add):
             # [A, B + C]  ->  [A, B] + [A, C]
             sargs = []
             for term in B.args:
-                comm = Commutator(A, term)
-                if isinstance(comm, Commutator):
-                    comm = comm._eval_expand_commutator()
+                comm = Commutator(A, term).expand(commutator=True)
                 sargs.append(comm)
             return Add(*sargs)
         elif isinstance(A, Mul):
@@ -160,12 +156,8 @@ class Commutator(Expr):
             a = A.args[0]
             b = Mul(*A.args[1:])
             c = B
-            comm1 = Commutator(b, c)
-            comm2 = Commutator(a, c)
-            if isinstance(comm1, Commutator):
-                comm1 = comm1._eval_expand_commutator()
-            if isinstance(comm2, Commutator):
-                comm2 = comm2._eval_expand_commutator()
+            comm1 = Commutator(b, c).expand(commutator=True)
+            comm2 = Commutator(a, c).expand(commutator=True)
             first = Mul(a, comm1)
             second = Mul(comm2, b)
             return Add(first, second)
@@ -174,12 +166,8 @@ class Commutator(Expr):
             a = A
             b = B.args[0]
             c = Mul(*B.args[1:])
-            comm1 = Commutator(a, b)
-            comm2 = Commutator(a, c)
-            if isinstance(comm1, Commutator):
-                comm1 = comm1._eval_expand_commutator()
-            if isinstance(comm2, Commutator):
-                comm2 = comm2._eval_expand_commutator()
+            comm1 = Commutator(a, b).expand(commutator=True)
+            comm2 = Commutator(a, c).expand(commutator=True)
             first = Mul(comm1, c)
             second = Mul(b, comm2)
             return Add(first, second)
