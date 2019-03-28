@@ -13,6 +13,7 @@ from __future__ import print_function, division
 
 from sympy import Derivative, Expr, Integer, oo, Mul, expand, Add, S
 from sympy.printing.pretty.stringpict import prettyForm
+from sympy.printing.pretty.pretty_symbology import pretty_symbol
 from sympy.physics.quantum.dagger import Dagger
 from sympy.physics.quantum.qexpr import QExpr, dispatch_method
 from sympy.matrices import eye
@@ -97,6 +98,13 @@ class Operator(QExpr):
     .. [1] https://en.wikipedia.org/wiki/Operator_%28physics%29
     .. [2] https://en.wikipedia.org/wiki/Observable
     """
+    __slots__ = ['parameters']
+
+    def __new__(cls, *args, **kwargs):
+        parameters = tuple(kwargs.pop('parameters', ()))
+        inst = QExpr.__new__(cls, *args, **kwargs)
+        inst.parameters = cls._eval_args(parameters, **kwargs)
+        return inst
 
     @classmethod
     def default_args(self):
@@ -104,7 +112,7 @@ class Operator(QExpr):
 
     @property
     def free_symbols(self):
-        return set().union(*(a.free_symbols for a in self.args))
+        return set(self.parameters)
 
     #-------------------------------------------------------------------------
     # Printing
@@ -120,25 +128,48 @@ class Operator(QExpr):
     def _print_operator_name_pretty(self, printer, *args):
         return prettyForm(self.__class__.__name__)
 
+    def _print_parameters(self, printer, *args):
+        return '(%s)' % self._print_sequence(
+            self.parameters, ',', printer, *args
+        )
+
     def _print_contents(self, printer, *args):
-        return '%s(%s)' % (
+        return '%s_{%s}%s' % (
             self._print_operator_name(printer, *args),
-            self._print_label(printer, *args)
+            self._print_label(printer, *args),
+            self._print_parameters(printer, *args)
+        )
+
+    def _print_parameters_pretty(self, printer, *args):
+        return self._print_sequence_pretty(
+            self.parameters, ',', printer, *args
         )
 
     def _print_contents_pretty(self, printer, *args):
-        pform = self._print_operator_name_pretty(printer, *args)
-        label_pform = self._print_label_pretty(printer, *args)
-        label_pform = prettyForm(
-            *label_pform.parens(left='(', right=')')
+        if self.label:
+            pform = prettyForm(pretty_symbol('%s_%s' % (
+                self._print_operator_name(printer, *args),
+                '_'.join(map(str, self.label))
+            )))
+        else:
+            pform = self._print_operator_name_pretty(printer, *args)
+        parameters_pform = self._print_parameters_pretty(printer, *args)
+        parameters_pform = prettyForm(
+            *parameters_pform.parens(left='(', right=')')
         )
-        pform = prettyForm(*pform.right((label_pform)))
+        pform = prettyForm(*pform.right((parameters_pform)))
         return pform
 
+    def _print_parameters_latex(self, printer, *args):
+        return r'\left(%s\right)' % self._print_sequence(
+            self.parameters, ',', printer, *args
+        )
+
     def _print_contents_latex(self, printer, *args):
-        return r'%s\left(%s\right)' % (
+        return r'%s_{%s}%s' % (
             self._print_operator_name_latex(printer, *args),
-            self._print_label_latex(printer, *args)
+            self._print_label_latex(printer, *args),
+            self._print_parameters_latex(printer, *args)
         )
 
     #-------------------------------------------------------------------------
