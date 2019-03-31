@@ -129,18 +129,22 @@ class Operator(QExpr):
         return prettyForm(self.__class__.__name__)
 
     def _print_parameters(self, printer, *args):
+        if not self.parameters:
+            return ''
         return '(%s)' % self._print_sequence(
             self.parameters, ',', printer, *args
         )
 
     def _print_contents(self, printer, *args):
-        return '%s_{%s}%s' % (
+        return '%s_%s%s' % (
             self._print_operator_name(printer, *args),
             self._print_label(printer, *args),
             self._print_parameters(printer, *args)
         )
 
     def _print_parameters_pretty(self, printer, *args):
+        if not self.parameters:
+            return prettyForm('')
         return self._print_sequence_pretty(
             self.parameters, ',', printer, *args
         )

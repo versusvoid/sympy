@@ -50,19 +50,19 @@ class PositionOperator(HermitianOperator):
         return ("x",)
 
     def _print_operator_name(self, printer, *args):
-        return printer._print(str(self.args[0]).upper(), *args)
+        return 'X'
 
     _print_operator_name_latex = _print_operator_name
 
     def _print_operator_name_pretty(self, printer, *args):
-        return prettyForm(str(self.args[0]).upper())
+        return prettyForm('X')
 
     @classmethod
     def _eval_hilbert_space(self, args):
         return L2(Interval(S.NegativeInfinity, S.Infinity))
 
     def _eval_commutator_MomentumOperator(self, other):
-        if other.args[0] == other.args[0]:
+        if self.args[0] == other.args[0]:
             return I*hbar
         else:
             return S.Zero
@@ -114,13 +114,12 @@ class MomentumOperator(HermitianOperator):
     """1D cartesian momentum operator."""
 
     def _print_operator_name(self, printer, *args):
-        return printer._print(f'P{self.args[0]}', *args)
+        return 'P'
 
-    def _print_operator_name_latex(self, printer, *args):
-        return printer._print('P_{%s}' % self.args[0], *args)
+    _print_operator_name_latex = _print_operator_name
 
     def _print_operator_name_pretty(self, printer, *args):
-        return prettyForm(f'P_{self.args[0]}')
+        return prettyForm('P')
 
     @classmethod
     def default_args(self):
